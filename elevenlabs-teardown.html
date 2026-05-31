@@ -1,0 +1,2173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ElevenLabs — Product Teardown · Yash Raj</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@300;400;500&family=Bebas+Neue&display=swap" rel="stylesheet"/>
+<style>
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RESET & ROOT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --base:#e8ecff;
+  --base2:#eef2ff;
+  --layer:#f4f6ff;
+  --surface:#ffffff;
+  --panel:#f9faff;
+  --rim:rgba(99,102,241,0.13);
+  --rim2:rgba(99,102,241,0.22);
+  --violet:#5b21b6;
+  --violet2:#7c3aed;
+  --violet3:#8b5cf6;
+  --vlight:rgba(91,33,182,0.09);
+  --gold:#92400e;
+  --gold2:#b45309;
+  --glight:rgba(146,64,14,0.09);
+  --emerald:#065f46;
+  --emerald2:#047857;
+  --elight:rgba(6,95,70,0.09);
+  --rose:#9f1239;
+  --rose2:#be123c;
+  --rlight:rgba(159,18,57,0.09);
+  --text:#0f172a;
+  --text2:#1e293b;
+  --muted:#475569;
+  --fog:#94a3b8;
+  --font-head:'Syne',sans-serif;
+  --font-body:'Outfit',sans-serif;
+  --font-mono:'DM Mono',monospace;
+  --font-display:'Bebas Neue',sans-serif;
+  --ease-out-expo:cubic-bezier(0.16,1,0.3,1);
+  --ease-in-out:cubic-bezier(0.76,0,0.24,1);
+  --shadow-sm:0 2px 12px rgba(91,33,182,0.08);
+  --shadow-md:0 8px 32px rgba(91,33,182,0.12);
+  --shadow-lg:0 20px 64px rgba(91,33,182,0.16);
+}
+html{scroll-behavior:auto;font-size:16px;}
+body{
+  background:var(--base);
+  color:var(--text);
+  font-family:var(--font-body);
+  overflow-x:hidden;
+  cursor:none;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   NOISE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#noise{
+  position:fixed;inset:0;z-index:1;
+  pointer-events:none;opacity:.03;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size:200px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   LOADER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#loader{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--base);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:2rem;
+  transition:opacity .7s var(--ease-out-expo), visibility .7s;
+}
+#loader.hidden{opacity:0;visibility:hidden;pointer-events:none;}
+
+.loader-waves{
+  display:flex;align-items:flex-end;gap:5px;height:60px;
+}
+.lwave{
+  width:5px;border-radius:5px;
+  background:linear-gradient(to top,var(--violet),var(--violet3));
+  animation:loadWave 1.1s ease-in-out infinite alternate;
+}
+.lwave:nth-child(1){--h:40%;animation-delay:0s;}
+.lwave:nth-child(2){--h:70%;animation-delay:0.1s;}
+.lwave:nth-child(3){--h:95%;animation-delay:0.2s;}
+.lwave:nth-child(4){--h:60%;animation-delay:0.3s;}
+.lwave:nth-child(5){--h:80%;animation-delay:0.4s;}
+.lwave:nth-child(6){--h:50%;animation-delay:0.5s;}
+.lwave:nth-child(7){--h:90%;animation-delay:0.6s;}
+.lwave:nth-child(8){--h:65%;animation-delay:0.7s;}
+@keyframes loadWave{
+  from{height:var(--h,40%);opacity:0.4;}
+  to{height:95%;opacity:1;}
+}
+.loader-name{
+  font-family:var(--font-display);
+  font-size:clamp(2rem,8vw,4rem);
+  letter-spacing:8px;
+  color:var(--violet);
+  position:relative;overflow:hidden;
+}
+.loader-sub{
+  font-family:var(--font-mono);font-size:.65rem;
+  color:var(--muted);letter-spacing:4px;
+  text-transform:uppercase;
+}
+.loader-bar-wrap{
+  width:220px;height:2px;
+  background:rgba(91,33,182,0.12);
+  border-radius:2px;overflow:hidden;
+}
+.loader-bar{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,var(--violet),var(--gold2));
+  border-radius:2px;
+  transition:width 1.2s var(--ease-out-expo);
+}
+.loader-pct{
+  font-family:var(--font-mono);font-size:.68rem;
+  color:var(--muted);letter-spacing:3px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   CURSOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#cursor{position:fixed;top:0;left:0;pointer-events:none;z-index:10000;}
+.c-dot{
+  position:absolute;width:9px;height:9px;
+  background:var(--violet2);border-radius:50%;
+  transform:translate(-50%,-50%);
+  transition:width .15s,height .15s,background .15s;
+}
+.c-ring{
+  position:absolute;width:40px;height:40px;
+  border:1.5px solid rgba(91,33,182,0.4);
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+  transition:width .4s var(--ease-out-expo),height .4s var(--ease-out-expo),border-color .3s;
+}
+body.hover-link .c-dot{width:6px;height:6px;background:var(--gold2);}
+body.hover-link .c-ring{width:56px;height:56px;border-color:var(--gold2);}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PROGRESS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#progress-bar{
+  position:fixed;top:0;left:0;z-index:200;
+  height:2px;width:0%;
+  background:linear-gradient(90deg,var(--violet),var(--gold2));
+  transition:width .1s linear;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   NAV
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  padding:1.1rem 4vw;
+  display:flex;align-items:center;justify-content:space-between;
+  transition:background .4s,backdrop-filter .4s,border-color .4s,box-shadow .4s;
+  border-bottom:1px solid transparent;
+}
+nav.scrolled{
+  background:rgba(232,236,255,0.88);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  border-color:var(--rim);
+  box-shadow:0 2px 20px rgba(91,33,182,0.07);
+}
+.nav-logo{
+  font-family:var(--font-display);
+  font-size:1.4rem;letter-spacing:4px;
+  color:var(--text);text-decoration:none;
+}
+.nav-logo span{color:var(--violet2);}
+.nav-links{display:flex;gap:2rem;list-style:none;}
+.nav-links a{
+  font-family:var(--font-mono);font-size:.68rem;
+  color:var(--muted);text-decoration:none;
+  letter-spacing:2px;text-transform:uppercase;
+  position:relative;transition:color .2s;
+}
+.nav-links a::after{
+  content:'';position:absolute;bottom:-3px;left:0;
+  width:0;height:1px;
+  background:linear-gradient(90deg,var(--violet),var(--gold2));
+  transition:width .3s var(--ease-out-expo);
+}
+.nav-links a:hover{color:var(--text);}
+.nav-links a:hover::after{width:100%;}
+.nav-badge{
+  font-family:var(--font-mono);font-size:.65rem;
+  letter-spacing:2px;text-transform:uppercase;
+  color:var(--surface);
+  background:linear-gradient(135deg,var(--violet),var(--violet2));
+  padding:.45rem 1.2rem;border-radius:3px;
+  text-decoration:none;
+  transition:transform .2s,box-shadow .2s;
+  box-shadow:var(--shadow-sm);
+}
+.nav-badge:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   HERO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#hero{
+  position:relative;z-index:2;
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  justify-content:flex-end;
+  padding:0 4vw 5rem;
+  overflow:hidden;
+}
+canvas#hero-canvas{position:absolute;inset:0;z-index:0;opacity:0.6;}
+.hero-grid{
+  position:absolute;inset:0;z-index:0;
+  background-image:
+    linear-gradient(rgba(91,33,182,0.06) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(91,33,182,0.06) 1px,transparent 1px);
+  background-size:72px 72px;
+  mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black,transparent);
+}
+.orb{position:absolute;border-radius:50%;filter:blur(100px);pointer-events:none;}
+.orb1{
+  width:600px;height:600px;
+  background:radial-gradient(circle,rgba(91,33,182,0.18),transparent 70%);
+  top:-120px;right:-100px;
+  animation:orbF1 14s ease-in-out infinite;
+}
+.orb2{
+  width:480px;height:480px;
+  background:radial-gradient(circle,rgba(180,83,9,0.12),transparent 70%);
+  bottom:-100px;left:-80px;
+  animation:orbF2 17s ease-in-out infinite;
+}
+.orb3{
+  width:360px;height:360px;
+  background:radial-gradient(circle,rgba(4,120,87,0.1),transparent 70%);
+  top:30%;left:35%;
+  animation:orbF3 20s ease-in-out infinite;
+}
+@keyframes orbF1{0%,100%{transform:translate(0,0);}50%{transform:translate(-50px,30px) scale(1.1);}}
+@keyframes orbF2{0%,100%{transform:translate(0,0);}50%{transform:translate(40px,-50px) scale(1.05);}}
+@keyframes orbF3{0%,100%{transform:translate(0,0);}33%{transform:translate(-30px,20px);}66%{transform:translate(40px,-30px);}}
+
+.hero-eyebrow{
+  display:flex;align-items:center;gap:1rem;margin-bottom:1.8rem;
+  position:relative;z-index:3;
+  opacity:0;transform:translateY(18px);
+  animation:revUp .8s .2s var(--ease-out-expo) forwards;
+}
+.eyebrow-line{width:36px;height:1.5px;background:linear-gradient(90deg,var(--violet),var(--gold2));}
+.eyebrow-text{
+  font-family:var(--font-mono);font-size:.7rem;
+  letter-spacing:4px;text-transform:uppercase;color:var(--muted);
+}
+
+.hero-title{
+  position:relative;z-index:3;
+  font-family:var(--font-display);
+  font-size:clamp(4.5rem,12vw,12rem);
+  line-height:.88;letter-spacing:-1px;
+}
+.hero-title-line{display:block;overflow:hidden;}
+.hero-title-line span{
+  display:block;
+  opacity:0;transform:translateY(100%);
+}
+.hero-title-line:nth-child(1) span{animation:revSlide .9s .35s var(--ease-out-expo) forwards;color:var(--text);}
+.hero-title-line:nth-child(2) span{
+  animation:revSlide .9s .5s var(--ease-out-expo) forwards;
+  color:transparent;
+  -webkit-text-stroke:2px rgba(91,33,182,0.25);
+}
+.hero-title-line:nth-child(3) span{animation:revSlide .9s .65s var(--ease-out-expo) forwards;color:var(--violet);}
+
+@keyframes revSlide{to{opacity:1;transform:translateY(0);}}
+@keyframes revUp{to{opacity:1;transform:translateY(0);}}
+
+/* Audio spectrum */
+.audio-spectrum{
+  position:relative;z-index:3;
+  display:flex;align-items:flex-end;gap:4px;
+  height:64px;margin:2rem 0 1.5rem;
+  opacity:0;animation:revUp .8s .8s forwards;
+}
+.asp-bar{
+  width:4px;border-radius:4px 4px 0 0;
+  background:linear-gradient(to top,var(--violet),var(--violet3));
+  transform-origin:bottom;
+  animation:aspAnim var(--spd,0.9s) var(--del,0s) ease-in-out infinite alternate;
+}
+@keyframes aspAnim{
+  from{transform:scaleY(var(--min,0.15));opacity:0.35;}
+  to{transform:scaleY(1);opacity:0.85;}
+}
+.asp-label{
+  font-family:var(--font-mono);font-size:.6rem;
+  color:var(--violet2);letter-spacing:3px;text-transform:uppercase;
+  writing-mode:horizontal-tb;
+  align-self:center;margin-left:1rem;opacity:0.7;
+}
+
+.hero-bottom{
+  position:relative;z-index:3;
+  display:flex;justify-content:space-between;align-items:flex-end;
+  flex-wrap:wrap;gap:2rem;
+  opacity:0;transform:translateY(18px);
+  animation:revUp .8s .95s var(--ease-out-expo) forwards;
+}
+.hero-desc{
+  max-width:420px;font-size:.95rem;line-height:1.85;color:var(--muted);
+}
+.hero-desc strong{color:var(--text);}
+
+.hero-stats{
+  display:flex;gap:2.5rem;
+  opacity:0;transform:translateY(18px);
+  animation:revUp .8s 1.05s var(--ease-out-expo) forwards;
+}
+.h-stat-num{
+  font-family:var(--font-display);
+  font-size:2.6rem;letter-spacing:1px;color:var(--violet);display:block;line-height:1;
+}
+.h-stat-lbl{
+  font-family:var(--font-mono);font-size:.58rem;
+  color:var(--fog);letter-spacing:2px;text-transform:uppercase;
+  display:block;margin-top:.3rem;
+}
+
+.btn-mag{
+  display:inline-flex;align-items:center;gap:.7rem;
+  font-family:var(--font-mono);font-size:.73rem;
+  letter-spacing:2px;text-transform:uppercase;
+  text-decoration:none;padding:.85rem 2rem;
+  border-radius:4px;position:relative;overflow:hidden;
+  transition:transform .3s var(--ease-out-expo);
+}
+.btn-mag.primary{
+  background:linear-gradient(135deg,var(--violet),#3730a3);
+  color:white;box-shadow:var(--shadow-md);
+}
+.btn-mag.primary::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--gold2),#d97706);
+  opacity:0;transition:opacity .35s;
+}
+.btn-mag.primary:hover::before{opacity:1;}
+.btn-mag.primary span{position:relative;z-index:1;}
+.btn-mag.outline{
+  border:1.5px solid var(--rim2);color:var(--muted);
+}
+.btn-mag.outline:hover{color:var(--text);border-color:var(--violet2);}
+
+.scroll-ind{
+  position:absolute;bottom:2rem;left:50%;
+  transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:.7rem;
+  opacity:0;animation:revUp .8s 1.4s forwards;z-index:3;
+}
+.scroll-wheel{
+  width:20px;height:34px;
+  border:1.5px solid rgba(91,33,182,0.3);
+  border-radius:10px;position:relative;
+}
+.scroll-wheel::before{
+  content:'';position:absolute;top:4px;left:50%;
+  transform:translateX(-50%);
+  width:3px;height:6px;
+  background:var(--violet2);border-radius:3px;
+  animation:wheelScroll 2.2s ease-in-out infinite;
+}
+@keyframes wheelScroll{
+  0%{opacity:1;transform:translate(-50%,0);}
+  80%{opacity:0;transform:translate(-50%,14px);}
+  100%{opacity:0;transform:translate(-50%,0);}
+}
+.scroll-text{
+  font-family:var(--font-mono);font-size:.58rem;
+  letter-spacing:3px;color:var(--fog);text-transform:uppercase;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SHARED SECTION STYLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.sec-divider{height:1px;background:linear-gradient(90deg,transparent,var(--rim),transparent);border:none;}
+.section-tag{display:inline-flex;align-items:center;gap:.7rem;margin-bottom:1.8rem;}
+.tag-num{font-family:var(--font-mono);font-size:.62rem;color:var(--violet2);letter-spacing:2px;}
+.tag-line{width:28px;height:1.5px;background:var(--violet2);}
+.tag-label{font-family:var(--font-mono);font-size:.62rem;color:var(--muted);letter-spacing:3px;text-transform:uppercase;}
+.sec-heading{
+  font-family:var(--font-head);
+  font-size:clamp(2.2rem,5vw,4.5rem);
+  font-weight:800;line-height:1.05;
+  letter-spacing:-1.5px;margin-bottom:1.2rem;color:var(--text);
+}
+.sec-heading em{
+  font-style:normal;
+  background:linear-gradient(135deg,var(--violet),var(--gold2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.glass-card{
+  background:rgba(255,255,255,0.7);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.9);
+  border-radius:16px;
+  box-shadow:var(--shadow-sm);
+  transition:box-shadow .35s,transform .35s;
+}
+.glass-card:hover{box-shadow:var(--shadow-md);transform:translateY(-4px);}
+
+/* Marquee */
+.marquee-wrap{
+  overflow:hidden;margin-bottom:4rem;
+  mask-image:linear-gradient(90deg,transparent,black 8%,black 92%,transparent);
+}
+.marquee{
+  display:flex;gap:2rem;width:max-content;
+  animation:marqueeAnim 22s linear infinite;
+}
+.marquee:hover{animation-play-state:paused;}
+.marquee-item{
+  font-family:var(--font-display);
+  font-size:clamp(1rem,2.5vw,1.6rem);
+  letter-spacing:4px;color:var(--fog);white-space:nowrap;
+  transition:color .3s;
+}
+.marquee-item:hover{color:var(--violet);}
+.marquee-sep{color:var(--violet2);}
+@keyframes marqueeAnim{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+/* Reveal animations */
+.reveal{opacity:0;transform:translateY(36px);transition:opacity .9s var(--ease-out-expo),transform .9s var(--ease-out-expo);}
+.reveal.visible{opacity:1;transform:none;}
+.reveal-left{opacity:0;transform:translateX(-36px);transition:opacity .9s var(--ease-out-expo),transform .9s var(--ease-out-expo);}
+.reveal-left.visible{opacity:1;transform:none;}
+.reveal-right{opacity:0;transform:translateX(36px);transition:opacity .9s var(--ease-out-expo),transform .9s var(--ease-out-expo);}
+.reveal-right.visible{opacity:1;transform:none;}
+.d1{transition-delay:.05s;}.d2{transition-delay:.12s;}.d3{transition-delay:.19s;}
+.d4{transition-delay:.26s;}.d5{transition-delay:.33s;}.d6{transition-delay:.4s;}
+
+/* Tilt */
+.tilt{transform-style:preserve-3d;transition:transform .06s;}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Q1 — CORE PROBLEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#q1{
+  position:relative;z-index:2;
+  padding:9rem 4vw;
+  background:var(--layer);overflow:hidden;
+}
+.q1-split{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:5rem;align-items:center;margin-top:2rem;
+}
+.q1-text p{font-size:.95rem;line-height:1.9;color:var(--muted);margin-bottom:1.1rem;}
+.q1-text p strong{color:var(--text);}
+.q1-quote{
+  margin:2rem 0;padding:1.4rem 1.8rem;
+  border-left:2.5px solid var(--violet2);
+  background:linear-gradient(90deg,var(--vlight),transparent);
+  border-radius:0 10px 10px 0;
+}
+.q1-quote p{font-size:.92rem;color:var(--text2);font-style:italic;line-height:1.75;}
+.q1-layers{display:flex;flex-direction:column;gap:.8rem;margin-top:1.5rem;}
+.layer-pill{
+  display:flex;align-items:flex-start;gap:1rem;
+  padding:1rem 1.2rem;
+  border:1px solid var(--rim);border-radius:10px;
+  background:var(--surface);
+  box-shadow:var(--shadow-sm);
+  transition:all .3s var(--ease-out-expo);
+}
+.layer-pill:hover{transform:translateX(6px);border-color:var(--violet3);box-shadow:var(--shadow-md);}
+.layer-icon{font-size:1.4rem;flex-shrink:0;}
+.layer-body{}
+.layer-title{font-weight:600;font-size:.88rem;color:var(--text);margin-bottom:.25rem;}
+.layer-desc{font-size:.8rem;color:var(--muted);line-height:1.65;}
+
+/* SVG Mockup Reference */
+.ref-frame{
+  border-radius:16px;overflow:hidden;
+  border:1px solid var(--rim2);
+  box-shadow:var(--shadow-lg);
+  background:var(--surface);
+}
+.ref-bar{
+  height:36px;
+  background:linear-gradient(135deg,#1e1b4b,#2e1065);
+  display:flex;align-items:center;padding:0 1rem;gap:.5rem;
+}
+.ref-dot{width:10px;height:10px;border-radius:50%;}
+.ref-dot.r{background:#f87171;}.ref-dot.y{background:#fbbf24;}.ref-dot.g{background:#34d399;}
+.ref-url{
+  flex:1;margin-left:.5rem;
+  background:rgba(255,255,255,0.08);border-radius:4px;
+  padding:.25rem .8rem;
+  font-family:var(--font-mono);font-size:.62rem;color:rgba(255,255,255,0.5);
+}
+.ref-body{padding:1.5rem;}
+
+/* ElevenLabs TTS Mockup */
+.tts-mock{
+  background:linear-gradient(135deg,#0f0c29,#1a1040);
+  border-radius:12px;padding:1.2rem;
+  font-family:var(--font-mono);font-size:.72rem;
+}
+.tts-label{color:rgba(255,255,255,0.4);letter-spacing:2px;font-size:.58rem;margin-bottom:.6rem;}
+.tts-textarea{
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:8px;padding:.8rem;
+  color:rgba(255,255,255,0.85);font-size:.78rem;line-height:1.6;
+  margin-bottom:.8rem;font-family:inherit;
+  width:100%;
+}
+.tts-bottom{display:flex;align-items:center;gap:.8rem;}
+.tts-voice-sel{
+  flex:1;background:rgba(255,255,255,0.06);
+  border:1px solid rgba(139,92,246,0.3);
+  border-radius:6px;padding:.5rem .8rem;
+  color:rgba(255,255,255,0.8);font-size:.72rem;font-family:inherit;
+}
+.tts-gen-btn{
+  background:linear-gradient(135deg,#7c3aed,#5b21b6);
+  color:white;border:none;border-radius:6px;
+  padding:.5rem 1.2rem;font-size:.72rem;
+  font-family:inherit;cursor:pointer;letter-spacing:1px;
+}
+.tts-waveform{
+  margin-top:1rem;height:40px;
+  background:rgba(255,255,255,0.04);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;gap:2px;
+  padding:0 .8rem;overflow:hidden;
+}
+.twbar{
+  width:2px;border-radius:2px;
+  background:linear-gradient(to top,#7c3aed,#c4b5fd);
+  animation:twAnim var(--spd,0.8s) var(--del,0s) ease-in-out infinite alternate;
+}
+@keyframes twAnim{
+  from{height:var(--min,4px);}
+  to{height:var(--max,24px);}
+}
+
+/* Voice cloning mockup */
+.vc-steps{display:flex;flex-direction:column;gap:.6rem;}
+.vc-step{
+  display:flex;align-items:center;gap:.8rem;
+  padding:.7rem 1rem;
+  border-radius:8px;background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.07);
+  color:rgba(255,255,255,0.8);font-size:.75rem;
+}
+.vc-step-num{
+  width:22px;height:22px;border-radius:50%;
+  background:linear-gradient(135deg,#7c3aed,#5b21b6);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.62rem;font-weight:700;color:white;flex-shrink:0;
+}
+.vc-step-check{color:#34d399;}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Q2 — PRIMARY USERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#q2{
+  position:relative;z-index:2;
+  padding:9rem 4vw;
+  background:var(--base2);overflow:hidden;
+}
+.user-cards{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  gap:1.5rem;margin-top:2.5rem;
+}
+.user-card{
+  position:relative;
+  background:var(--surface);
+  border:1px solid var(--rim);border-radius:16px;
+  padding:2rem;overflow:hidden;
+  transition:all .4s var(--ease-out-expo);
+  cursor:default;
+}
+.user-card::before{
+  content:'';position:absolute;
+  inset:0;border-radius:16px;
+  background:var(--uc-grad);
+  opacity:0;transition:opacity .4s;
+}
+.user-card:hover::before{opacity:1;}
+.user-card:hover{transform:translateY(-8px);box-shadow:var(--shadow-lg);}
+.uc-rank{
+  position:absolute;top:1rem;right:1rem;
+  font-family:var(--font-display);
+  font-size:4rem;color:rgba(0,0,0,0.04);
+  line-height:1;pointer-events:none;
+}
+.uc-emoji{font-size:2.2rem;margin-bottom:1rem;display:block;position:relative;z-index:1;}
+.uc-title{
+  font-family:var(--font-head);font-size:1.1rem;font-weight:700;
+  color:var(--text);margin-bottom:.5rem;position:relative;z-index:1;
+}
+.uc-desc{font-size:.82rem;line-height:1.75;color:var(--muted);margin-bottom:1rem;position:relative;z-index:1;}
+.uc-tags{display:flex;flex-wrap:wrap;gap:.4rem;position:relative;z-index:1;}
+.uc-tag{
+  font-family:var(--font-mono);font-size:.6rem;
+  padding:.25rem .7rem;border-radius:20px;
+  letter-spacing:.5px;
+}
+.ut-v{background:var(--vlight);color:var(--violet2);border:1px solid rgba(91,33,182,0.2);}
+.ut-g{background:var(--elight);color:var(--emerald2);border:1px solid rgba(4,120,87,0.2);}
+.ut-a{background:var(--glight);color:var(--gold2);border:1px solid rgba(180,83,9,0.2);}
+.ut-r{background:var(--rlight);color:var(--rose2);border:1px solid rgba(159,18,57,0.2);}
+
+.priority-bar{
+  margin-top:3rem;padding:2rem;
+  background:var(--surface);border:1px solid var(--rim);border-radius:16px;
+  box-shadow:var(--shadow-sm);
+}
+.pb-title{font-family:var(--font-mono);font-size:.65rem;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:1.2rem;}
+.pb-row{display:flex;align-items:center;gap:1rem;margin-bottom:.9rem;}
+.pb-label{font-size:.82rem;color:var(--text2);width:160px;flex-shrink:0;}
+.pb-track{flex:1;height:8px;background:var(--base);border-radius:8px;overflow:hidden;}
+.pb-fill{height:100%;border-radius:8px;width:0;transition:width 1.5s var(--ease-out-expo);}
+.pb-val{font-family:var(--font-mono);font-size:.65rem;color:var(--muted);width:40px;text-align:right;}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Q3 — DIFFERENTIATORS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#q3{
+  position:relative;z-index:2;
+  padding:9rem 4vw;
+  background:var(--layer);overflow:hidden;
+}
+.diff-grid{
+  display:grid;grid-template-columns:1fr;
+  gap:1.5rem;margin-top:2.5rem;
+}
+.diff-card{
+  display:grid;grid-template-columns:1fr 1.4fr;
+  gap:0;
+  background:var(--surface);border:1px solid var(--rim);
+  border-radius:16px;overflow:hidden;
+  box-shadow:var(--shadow-sm);
+  transition:all .4s var(--ease-out-expo);
+}
+.diff-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-4px);}
+.diff-left{
+  padding:2.5rem;
+  border-right:1px solid var(--rim);
+}
+.diff-num{
+  font-family:var(--font-display);font-size:.9rem;
+  color:var(--muted);letter-spacing:4px;margin-bottom:1rem;
+}
+.diff-icon{font-size:2.5rem;margin-bottom:1rem;}
+.diff-title{
+  font-family:var(--font-head);font-size:1.4rem;font-weight:700;
+  color:var(--text);margin-bottom:.7rem;
+}
+.diff-desc{font-size:.88rem;line-height:1.8;color:var(--muted);margin-bottom:1.5rem;}
+.diff-chips{display:flex;flex-wrap:wrap;gap:.4rem;}
+.diff-chip{
+  font-family:var(--font-mono);font-size:.62rem;
+  padding:.25rem .7rem;border-radius:20px;
+  border:1px solid var(--rim2);color:var(--muted);
+}
+.diff-right{padding:2rem;display:flex;align-items:center;justify-content:center;}
+.diff-badge{
+  display:inline-flex;align-items:center;gap:.5rem;
+  font-family:var(--font-mono);font-size:.6rem;
+  letter-spacing:2px;text-transform:uppercase;
+  padding:.35rem .9rem;border-radius:4px;margin-bottom:1rem;
+}
+.db-star{background:linear-gradient(135deg,rgba(146,64,14,0.12),rgba(180,83,9,0.06));color:var(--gold2);border:1px solid rgba(180,83,9,0.25);}
+
+/* Spec box */
+.spec-box{
+  background:linear-gradient(135deg,#1e1b4b,#0f0c29);
+  border-radius:12px;padding:1.2rem;width:100%;
+}
+.spec-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,0.07);
+  font-family:var(--font-mono);font-size:.72rem;
+}
+.spec-row:last-child{border:none;}
+.spec-key{color:rgba(255,255,255,0.45);letter-spacing:1px;}
+.spec-val{color:rgba(255,255,255,0.85);font-weight:500;}
+.spec-val.green{color:#34d399;}
+.spec-val.violet{color:#a78bfa;}
+
+/* Comparison table */
+.comp-table{width:100%;border-collapse:separate;border-spacing:0;}
+.comp-table th{
+  font-family:var(--font-mono);font-size:.62rem;
+  color:var(--muted);letter-spacing:2px;text-transform:uppercase;
+  padding:.6rem 1rem;text-align:left;
+  border-bottom:1px solid var(--rim);
+}
+.comp-table td{
+  font-size:.8rem;color:var(--text2);
+  padding:.65rem 1rem;border-bottom:1px solid var(--rim);
+}
+.comp-table tr:last-child td{border:none;}
+.comp-table td.el{color:var(--violet);font-weight:600;}
+.tick{color:#059669;font-weight:700;}
+.cross{color:var(--rose2);}
+.partial{color:var(--gold2);}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Q4 — SUCCESS METRICS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#q4{
+  position:relative;z-index:2;
+  padding:9rem 4vw;
+  background:var(--base2);overflow:hidden;
+}
+.metric-big{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:1px;background:var(--rim);border:1px solid var(--rim);
+  border-radius:16px;overflow:hidden;margin-top:2.5rem;margin-bottom:3rem;
+}
+.met-cell{
+  background:var(--surface);padding:2rem 1.5rem;
+  transition:background .3s;position:relative;overflow:hidden;
+}
+.met-cell:hover{background:var(--panel);}
+.met-cell::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--violet),var(--gold2));
+  transform:scaleX(0);transform-origin:left;
+  transition:transform .5s var(--ease-out-expo);
+}
+.met-cell:hover::before{transform:scaleX(1);}
+.met-value{
+  font-family:var(--font-display);font-size:3rem;
+  background:linear-gradient(135deg,var(--violet),var(--gold2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;display:block;line-height:1;
+}
+.met-label{
+  font-family:var(--font-mono);font-size:.6rem;
+  color:var(--fog);letter-spacing:2px;text-transform:uppercase;
+  margin-top:.5rem;display:block;
+}
+.met-trend{font-size:.75rem;color:var(--emerald);margin-top:.3rem;display:block;}
+
+.metric-cards{
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  gap:1.5rem;
+}
+.metric-card{
+  background:var(--surface);border:1px solid var(--rim);border-radius:16px;
+  padding:2rem;box-shadow:var(--shadow-sm);
+  transition:all .35s var(--ease-out-expo);
+  position:relative;overflow:hidden;
+}
+.metric-card::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;
+  height:3px;background:var(--mc-color,linear-gradient(90deg,var(--violet),var(--violet3)));
+}
+.metric-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-md);}
+.mc-num{
+  font-family:var(--font-display);font-size:1.3rem;
+  color:var(--muted);letter-spacing:3px;margin-bottom:.8rem;
+}
+.mc-title{
+  font-family:var(--font-head);font-size:1.05rem;font-weight:700;
+  color:var(--text);margin-bottom:.6rem;
+}
+.mc-desc{font-size:.82rem;line-height:1.75;color:var(--muted);margin-bottom:1.2rem;}
+.mc-target{
+  padding:.7rem 1rem;
+  border-radius:8px;background:var(--panel);
+  border-left:2.5px solid var(--mc-bor,var(--violet));
+  font-family:var(--font-mono);font-size:.7rem;color:var(--muted);
+  line-height:1.5;
+}
+.mc-target strong{color:var(--text);}
+
+/* Growth chart SVG */
+.growth-chart-wrap{
+  margin-top:3rem;padding:2rem;
+  background:var(--surface);border:1px solid var(--rim);border-radius:16px;
+  box-shadow:var(--shadow-sm);
+}
+.gc-title{font-family:var(--font-mono);font-size:.65rem;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:1.5rem;}
+.gc-svg-wrap{position:relative;}
+.gc-svg path{stroke-dasharray:800;stroke-dashoffset:800;transition:stroke-dashoffset 2s var(--ease-out-expo);}
+.gc-svg.animated path{stroke-dashoffset:0;}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Q5 — RISKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#q5{
+  position:relative;z-index:2;
+  padding:9rem 4vw;
+  background:var(--layer);overflow:hidden;
+}
+.risk-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:1.5rem;margin-top:2.5rem;
+}
+.risk-card{
+  border-radius:14px;padding:1.8rem;overflow:hidden;
+  position:relative;
+  background:var(--surface);border:1px solid var(--rim);
+  box-shadow:var(--shadow-sm);
+  transition:all .4s var(--ease-out-expo);
+}
+.risk-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-md);}
+.risk-card::before{
+  content:'';position:absolute;top:0;left:0;
+  width:4px;height:100%;background:var(--rc-color);
+  border-radius:4px 0 0 4px;
+}
+.risk-severity{
+  display:inline-flex;align-items:center;gap:.4rem;
+  font-family:var(--font-mono);font-size:.58rem;
+  letter-spacing:2px;text-transform:uppercase;
+  padding:.3rem .8rem;border-radius:20px;
+  margin-bottom:1rem;
+}
+.rs-critical{background:var(--rlight);color:var(--rose2);border:1px solid rgba(159,18,57,0.2);}
+.rs-high{background:var(--glight);color:var(--gold2);border:1px solid rgba(180,83,9,0.2);}
+.rs-medium{background:var(--vlight);color:var(--violet2);border:1px solid rgba(91,33,182,0.2);}
+.risk-title{
+  font-family:var(--font-head);font-size:1.05rem;font-weight:700;
+  color:var(--text);margin-bottom:.5rem;
+}
+.risk-desc{font-size:.82rem;line-height:1.75;color:var(--muted);margin-bottom:1rem;}
+.risk-mitig{
+  padding:.7rem .9rem;
+  border-radius:8px;background:var(--elight);
+  font-size:.77rem;color:var(--emerald);line-height:1.55;
+  border:1px solid rgba(4,120,87,0.15);
+}
+.risk-mitig::before{content:"🛡 Mitigation: ";font-weight:600;}
+
+.biggest-risk{
+  margin-top:2.5rem;padding:2rem;
+  background:linear-gradient(135deg,rgba(159,18,57,0.06),rgba(91,33,182,0.04));
+  border:1px solid rgba(159,18,57,0.2);border-radius:16px;
+  position:relative;overflow:hidden;
+}
+.br-label{font-family:var(--font-mono);font-size:.62rem;color:var(--rose2);letter-spacing:3px;text-transform:uppercase;margin-bottom:.8rem;}
+.br-text{font-size:.95rem;line-height:1.85;color:var(--text2);}
+.br-text strong{color:var(--rose2);}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ANALYST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#analyst{
+  position:relative;z-index:2;
+  padding:9rem 4vw 7rem;
+  background:var(--base2);overflow:hidden;
+}
+.analyst-big{
+  font-family:var(--font-display);
+  font-size:clamp(4rem,12vw,11rem);
+  line-height:.9;letter-spacing:-2px;
+  color:transparent;
+  -webkit-text-stroke:1px rgba(91,33,182,0.1);
+  position:absolute;bottom:-2rem;left:4vw;
+  pointer-events:none;white-space:nowrap;user-select:none;
+}
+.analyst-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:4rem;align-items:start;position:relative;z-index:2;
+}
+.analyst-card{
+  background:var(--surface);border:1px solid var(--rim);border-radius:16px;
+  padding:2.5rem;box-shadow:var(--shadow-md);
+  position:relative;overflow:hidden;
+}
+.analyst-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--violet),var(--gold2),var(--emerald2));
+}
+.analyst-avatar{
+  width:70px;height:70px;border-radius:50%;
+  background:linear-gradient(135deg,var(--violet),#3730a3);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-size:1.8rem;
+  color:white;margin-bottom:1.2rem;
+  box-shadow:0 8px 24px rgba(91,33,182,0.3);
+}
+.analyst-name{
+  font-family:var(--font-head);font-size:1.6rem;font-weight:800;
+  color:var(--text);margin-bottom:.3rem;
+}
+.analyst-title{
+  font-family:var(--font-mono);font-size:.68rem;
+  color:var(--violet2);letter-spacing:2px;text-transform:uppercase;
+  margin-bottom:1.2rem;
+}
+.analyst-bio{font-size:.88rem;line-height:1.85;color:var(--muted);margin-bottom:1.5rem;}
+.open-badge{
+  display:inline-flex;align-items:center;gap:.5rem;
+  font-family:var(--font-mono);font-size:.62rem;
+  letter-spacing:2px;text-transform:uppercase;
+  color:var(--emerald2);
+  background:var(--elight);
+  border:1px solid rgba(4,120,87,0.25);
+  padding:.45rem .9rem;border-radius:20px;margin-bottom:1.5rem;
+}
+.open-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--emerald2);
+  animation:pulse 2.5s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.3;transform:scale(.7);}}
+.contact-links{display:flex;flex-direction:column;gap:.8rem;}
+.c-link{
+  display:flex;align-items:center;gap:1rem;
+  padding:1rem 1.2rem;
+  border:1px solid var(--rim);border-radius:10px;
+  background:var(--panel);
+  text-decoration:none;color:var(--text2);
+  transition:all .3s var(--ease-out-expo);
+}
+.c-link:hover{transform:translateX(6px);border-color:var(--violet3);box-shadow:var(--shadow-sm);}
+.c-link-icon{
+  width:38px;height:38px;border-radius:8px;
+  background:var(--surface);border:1px solid var(--rim);
+  display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;
+}
+.c-link-info{}
+.c-link-key{font-family:var(--font-mono);font-size:.58rem;color:var(--fog);letter-spacing:2px;text-transform:uppercase;margin-bottom:.15rem;}
+.c-link-val{font-size:.85rem;color:var(--text);}
+.c-link-arrow{margin-left:auto;color:var(--fog);transition:color .2s,transform .2s;}
+.c-link:hover .c-link-arrow{color:var(--violet2);transform:translateX(3px);}
+
+.skills-cluster{
+  display:grid;grid-template-columns:1fr 1fr;gap:1px;
+  background:var(--rim);border:1px solid var(--rim);
+  border-radius:12px;overflow:hidden;margin-top:2rem;
+}
+.sk-cell{
+  background:var(--surface);padding:1.4rem 1.2rem;
+  transition:background .3s;
+}
+.sk-cell:hover{background:var(--panel);}
+.sk-cell-val{
+  font-family:var(--font-display);font-size:2.2rem;
+  background:linear-gradient(135deg,var(--violet),var(--gold2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;line-height:1;
+}
+.sk-cell-lbl{
+  font-family:var(--font-mono);font-size:.58rem;
+  color:var(--fog);letter-spacing:2px;text-transform:uppercase;margin-top:.4rem;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   FOOTER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+footer{
+  position:relative;z-index:2;
+  background:var(--text);
+  padding:2.5rem 4vw;
+  display:flex;justify-content:space-between;
+  align-items:center;flex-wrap:wrap;gap:1rem;
+}
+.footer-brand{
+  font-family:var(--font-display);
+  font-size:1.3rem;letter-spacing:4px;color:white;
+}
+.footer-brand span{color:var(--violet3);}
+.footer-links{display:flex;gap:2rem;}
+.footer-links a{
+  font-family:var(--font-mono);font-size:.62rem;
+  color:rgba(255,255,255,0.4);text-decoration:none;
+  letter-spacing:2px;text-transform:uppercase;transition:color .2s;
+}
+.footer-links a:hover{color:white;}
+.footer-copy{
+  font-family:var(--font-mono);font-size:.6rem;
+  color:rgba(255,255,255,0.3);letter-spacing:2px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RESPONSIVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@media(max-width:1024px){
+  .q1-split,.analyst-grid{grid-template-columns:1fr;}
+  .diff-card{grid-template-columns:1fr;}
+  .diff-right{border-top:1px solid var(--rim);}
+  .metric-big{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:768px){
+  .nav-links{display:none;}
+  .user-cards,.metric-cards,.risk-grid{grid-template-columns:1fr;}
+  .metric-big{grid-template-columns:1fr 1fr;}
+  .hero-stats{gap:1.5rem;}
+  .hero-bottom{flex-direction:column;align-items:flex-start;}
+  .priority-bar{padding:1.2rem;}
+  footer{flex-direction:column;text-align:center;}
+  .analyst-big{display:none;}
+}
+@media(max-width:480px){
+  .metric-big{grid-template-columns:1fr;}
+  .skills-cluster{grid-template-columns:1fr;}
+}
+
+/* Glitch */
+.glitch{position:relative;}
+.glitch::before,.glitch::after{
+  content:attr(data-text);
+  position:absolute;top:0;left:0;
+  font-family:inherit;font-size:inherit;font-weight:inherit;width:100%;
+}
+.glitch::before{
+  color:var(--violet2);
+  animation:g1 5s 3s infinite;
+  clip-path:polygon(0 0,100% 0,100% 35%,0 35%);
+}
+.glitch::after{
+  color:var(--gold2);
+  animation:g2 5s 3.3s infinite;
+  clip-path:polygon(0 65%,100% 65%,100% 100%,0 100%);
+}
+@keyframes g1{0%,92%,100%{transform:translateX(0);opacity:0;}93%{transform:translateX(-3px);opacity:.9;}95%{transform:translateX(3px);opacity:.9;}97%{transform:translateX(0);opacity:0;}}
+@keyframes g2{0%,92%,100%{transform:translateX(0);opacity:0;}94%{transform:translateX(3px);opacity:.9;}96%{transform:translateX(-3px);opacity:.9;}98%{transform:translateX(0);opacity:0;}}
+
+/* Floating */
+.float-el{animation:floatEl 6s ease-in-out infinite;}
+@keyframes floatEl{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+
+/* Magnetic */
+.mag-wrap{display:inline-block;}
+</style>
+</head>
+<body>
+
+<div id="noise"></div>
+<div id="progress-bar"></div>
+
+<!-- CURSOR -->
+<div id="cursor">
+  <div class="c-dot" id="cdot"></div>
+  <div class="c-ring" id="cring"></div>
+</div>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-waves">
+    <div class="lwave" style="--h:40%"></div>
+    <div class="lwave" style="--h:65%"></div>
+    <div class="lwave" style="--h:90%"></div>
+    <div class="lwave" style="--h:55%"></div>
+    <div class="lwave" style="--h:80%"></div>
+    <div class="lwave" style="--h:45%"></div>
+    <div class="lwave" style="--h:95%"></div>
+    <div class="lwave" style="--h:60%"></div>
+    <div class="lwave" style="--h:75%"></div>
+  </div>
+  <div class="loader-name">ELEVENLABS</div>
+  <div class="loader-sub">Product Teardown — Yash Raj</div>
+  <div class="loader-bar-wrap"><div class="loader-bar" id="loader-bar"></div></div>
+  <div class="loader-pct" id="loader-pct">0%</div>
+</div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#hero" class="nav-logo">EL<span>.</span>Teardown</a>
+  <ul class="nav-links">
+    <li><a href="#q1">Problem</a></li>
+    <li><a href="#q2">Users</a></li>
+    <li><a href="#q3">Differentiators</a></li>
+    <li><a href="#q4">Metrics</a></li>
+    <li><a href="#q5">Risks</a></li>
+    <li><a href="#analyst">Analyst</a></li>
+  </ul>
+  <a href="mailto:akhisweety01@gmail.com" class="nav-badge">By Yash Raj</a>
+</nav>
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<section id="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="hero-grid"></div>
+
+  <div class="hero-content" style="position:relative;z-index:3;">
+    <div class="hero-eyebrow">
+      <div class="eyebrow-line"></div>
+      <span class="eyebrow-text">// PM / Product Teardown · May 2026 · ElevenLabs</span>
+    </div>
+
+    <h1 class="hero-title glitch" data-text="ELEVEN">
+      <div class="hero-title-line"><span>ELEVEN</span></div>
+      <div class="hero-title-line"><span>LABS</span></div>
+      <div class="hero-title-line"><span>Decoded.</span></div>
+    </h1>
+
+    <!-- Audio Spectrum -->
+    <div class="audio-spectrum">
+      <div class="asp-bar" style="height:20px;--spd:0.7s;--del:0s;--min:0.15;"></div>
+      <div class="asp-bar" style="height:36px;--spd:1.0s;--del:0.08s;--min:0.2;"></div>
+      <div class="asp-bar" style="height:50px;--spd:0.85s;--del:0.16s;--min:0.25;"></div>
+      <div class="asp-bar" style="height:28px;--spd:1.2s;--del:0.24s;--min:0.18;"></div>
+      <div class="asp-bar" style="height:60px;--spd:0.65s;--del:0.32s;--min:0.3;"></div>
+      <div class="asp-bar" style="height:42px;--spd:0.9s;--del:0.4s;--min:0.22;"></div>
+      <div class="asp-bar" style="height:55px;--spd:1.1s;--del:0.48s;--min:0.28;"></div>
+      <div class="asp-bar" style="height:32px;--spd:0.75s;--del:0.56s;--min:0.2;"></div>
+      <div class="asp-bar" style="height:46px;--spd:0.95s;--del:0.64s;--min:0.24;"></div>
+      <div class="asp-bar" style="height:24px;--spd:1.3s;--del:0.72s;--min:0.15;"></div>
+      <div class="asp-bar" style="height:58px;--spd:0.8s;--del:0.8s;--min:0.3;"></div>
+      <div class="asp-bar" style="height:38px;--spd:1.05s;--del:0.88s;--min:0.2;"></div>
+      <div class="asp-bar" style="height:48px;--spd:0.7s;--del:0.96s;--min:0.25;"></div>
+      <div class="asp-bar" style="height:30px;--spd:1.15s;--del:1.04s;--min:0.18;"></div>
+      <div class="asp-bar" style="height:62px;--spd:0.9s;--del:1.12s;--min:0.32;"></div>
+      <div class="asp-bar" style="height:22px;--spd:0.75s;--del:1.2s;--min:0.15;"></div>
+      <div class="asp-bar" style="height:54px;--spd:1.0s;--del:1.28s;--min:0.27;"></div>
+      <div class="asp-bar" style="height:40px;--spd:0.85s;--del:1.36s;--min:0.22;"></div>
+      <div class="asp-bar" style="height:26px;--spd:1.1s;--del:1.44s;--min:0.17;"></div>
+      <div class="asp-bar" style="height:58px;--spd:0.78s;--del:1.52s;--min:0.3;"></div>
+      <span class="asp-label">LIVE VOICE ANALYSIS</span>
+    </div>
+
+    <div class="hero-bottom">
+      <p class="hero-desc">
+        A deep <strong>product teardown</strong> of ElevenLabs — the AI audio infrastructure company powering the Voice Internet. Covering core problem, user segments, key differentiators, PM metrics, and biggest risks.
+      </p>
+      <div style="display:flex;gap:1rem;align-items:center;">
+        <div class="mag-wrap">
+          <a href="#q1" class="btn-mag primary"><span>Start Reading</span><span>↓</span></a>
+        </div>
+        <div class="mag-wrap">
+          <a href="#analyst" class="btn-mag outline">About Analyst</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-stats">
+      <div>
+        <span class="h-stat-num" data-target="500">0</span><span class="h-stat-num">M</span>
+        <span class="h-stat-lbl">ARR (Apr 2026)</span>
+      </div>
+      <div>
+        <span class="h-stat-num" data-target="11">0</span><span class="h-stat-num">B</span>
+        <span class="h-stat-lbl">Valuation (Series D)</span>
+      </div>
+      <div>
+        <span class="h-stat-num" data-target="41">0</span><span class="h-stat-num">%</span>
+        <span class="h-stat-lbl">Fortune 500 Users</span>
+      </div>
+      <div>
+        <span class="h-stat-num" data-target="70">0</span><span class="h-stat-num">+</span>
+        <span class="h-stat-lbl">Languages Supported</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-ind">
+    <div class="scroll-wheel"></div>
+    <div class="scroll-text">Scroll</div>
+  </div>
+</section>
+
+<!-- ═══════════════ Q1 — CORE PROBLEM ═══════════════ -->
+<hr class="sec-divider"/>
+<section id="q1">
+  <div class="marquee-wrap">
+    <div class="marquee">
+      <span class="marquee-item">AI VOICE</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">TEXT TO SPEECH</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">VOICE CLONING</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">NEURAL AUDIO</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">AUDIO INFRASTRUCTURE</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">ELEVEN V3</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">MULTILINGUAL</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">ELEVENLABS</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">AI VOICE</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">TEXT TO SPEECH</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">VOICE CLONING</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">NEURAL AUDIO</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">AUDIO INFRASTRUCTURE</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">ELEVEN V3</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">MULTILINGUAL</span><span class="marquee-sep">✦</span>
+      <span class="marquee-item">ELEVENLABS</span><span class="marquee-sep">✦</span>
+    </div>
+  </div>
+
+  <div class="section-tag reveal">
+    <span class="tag-num">01</span>
+    <div class="tag-line"></div>
+    <span class="tag-label">Core Problem</span>
+  </div>
+
+  <h2 class="sec-heading reveal">
+    Not Just Voice.<br/><em>Intelligence in Audio.</em>
+  </h2>
+
+  <div class="q1-split">
+    <div class="q1-text reveal-left">
+      <p>ElevenLabs is fundamentally an <strong>AI audio infrastructure company</strong>. While it began as a voice tool and grew into a creator platform, the real core problem it was built to solve is structural and deeply underappreciated:</p>
+
+      <p><strong>AI-generated speech has always been robotic, one-dimensional, and incapable of conveying genuine human emotion, cultural nuance, or contextual intelligence</strong> — creating a massive barrier for global digital content, accessibility, and human-computer interaction.</p>
+
+      <div class="q1-quote">
+        <p>"The Voice Internet was always coming. ElevenLabs didn't invent the idea — they were just the first to make AI speech good enough that users forgot they were listening to a machine."</p>
+      </div>
+
+      <p>But the problem has <strong>three deeper layers</strong> beyond "AI voices sounded bad":</p>
+
+      <div class="q1-layers">
+        <div class="layer-pill reveal-left d1">
+          <span class="layer-icon">🎭</span>
+          <div class="layer-body">
+            <div class="layer-title">The Quality Gap</div>
+            <div class="layer-desc">Legacy TTS (Amazon Polly, Google TTS) used concatenative synthesis — stitching pre-recorded phonemes. Results sounded mechanical. ElevenLabs' neural models understand context: adding pauses, emphasis, emotion, and cultural cadence where appropriate.</div>
+          </div>
+        </div>
+        <div class="layer-pill reveal-left d2">
+          <span class="layer-icon">⚡</span>
+          <div class="layer-body">
+            <div class="layer-title">The Scale Gap</div>
+            <div class="layer-desc">Recording studio voice work is prohibitively expensive and doesn't scale. A publisher narrating 50,000 audiobooks or a game studio voicing 1,000 characters needed ElevenLabs-level automation. The human alternative simply doesn't exist at scale.</div>
+          </div>
+        </div>
+        <div class="layer-pill reveal-left d3">
+          <span class="layer-icon">🌍</span>
+          <div class="layer-body">
+            <div class="layer-title">The Access Gap</div>
+            <div class="layer-desc">High-quality multilingual voice production was a privilege of large corporations. ElevenLabs democratized it: any creator in any country now ships content in 70+ languages with studio-quality audio — for cents per minute.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:1.8rem;padding:1.4rem;background:linear-gradient(135deg,rgba(91,33,182,0.08),rgba(180,83,9,0.05));border-radius:12px;border:1px solid rgba(91,33,182,0.15);" class="reveal d4">
+        <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--violet2);letter-spacing:3px;text-transform:uppercase;margin-bottom:.7rem;">Verdict: What Is ElevenLabs?</div>
+        <p style="font-size:.88rem;color:var(--text2);line-height:1.8;">ElevenLabs is all three — a voice tool, a creator platform, AND an AI infrastructure company — but its ultimate identity is <strong style="color:var(--violet);">audio infrastructure</strong>, the same way Stripe is payment infrastructure. Voice is the wedge; the platform is the destination. Their Series D pitch wasn't about TTS — it was about becoming the audio layer of the entire internet.</p>
+      </div>
+    </div>
+
+    <div class="reveal-right">
+      <!-- Reference Image: ElevenLabs TTS Interface Mockup -->
+      <div class="ref-frame float-el" style="margin-bottom:1.5rem;">
+        <div class="ref-bar">
+          <div class="ref-dot r"></div>
+          <div class="ref-dot y"></div>
+          <div class="ref-dot g"></div>
+          <div class="ref-url">elevenlabs.io/app/speech-synthesis</div>
+        </div>
+        <div class="ref-body" style="background:linear-gradient(135deg,#0d0b1e,#150e30);padding:1.2rem;">
+          <div class="tts-mock">
+            <div class="tts-label">TEXT TO SPEECH — ELEVEN V3 MODEL</div>
+            <div class="tts-textarea">"The future of human-computer interaction is voice. ElevenLabs is building the infrastructure for that future — one neural model at a time."</div>
+            <div class="tts-bottom">
+              <select class="tts-voice-sel">
+                <option>🎙 Rachel — English (US)</option>
+                <option>🎙 Antoni — English (UK)</option>
+              </select>
+              <button class="tts-gen-btn">▶ GENERATE</button>
+            </div>
+            <div class="tts-waveform">
+              <div class="twbar" style="--min:3px;--max:22px;--spd:0.6s;--del:0s;"></div>
+              <div class="twbar" style="--min:5px;--max:32px;--spd:0.8s;--del:0.06s;"></div>
+              <div class="twbar" style="--min:2px;--max:14px;--spd:0.7s;--del:0.12s;"></div>
+              <div class="twbar" style="--min:8px;--max:36px;--spd:0.9s;--del:0.18s;"></div>
+              <div class="twbar" style="--min:4px;--max:28px;--spd:0.65s;--del:0.24s;"></div>
+              <div class="twbar" style="--min:6px;--max:20px;--spd:1.0s;--del:0.3s;"></div>
+              <div class="twbar" style="--min:3px;--max:34px;--spd:0.75s;--del:0.36s;"></div>
+              <div class="twbar" style="--min:9px;--max:26px;--spd:0.85s;--del:0.42s;"></div>
+              <div class="twbar" style="--min:4px;--max:18px;--spd:0.7s;--del:0.48s;"></div>
+              <div class="twbar" style="--min:7px;--max:38px;--spd:0.6s;--del:0.54s;"></div>
+              <div class="twbar" style="--min:2px;--max:12px;--spd:0.95s;--del:0.6s;"></div>
+              <div class="twbar" style="--min:5px;--max:30px;--spd:0.8s;--del:0.66s;"></div>
+              <div class="twbar" style="--min:8px;--max:24px;--spd:0.72s;--del:0.72s;"></div>
+              <div class="twbar" style="--min:3px;--max:16px;--spd:0.88s;--del:0.78s;"></div>
+              <div class="twbar" style="--min:6px;--max:32px;--spd:0.66s;--del:0.84s;"></div>
+              <div class="twbar" style="--min:4px;--max:20px;--spd:1.05s;--del:0.9s;"></div>
+              <div class="twbar" style="--min:7px;--max:28px;--spd:0.78s;--del:0.96s;"></div>
+              <div class="twbar" style="--min:2px;--max:40px;--spd:0.7s;--del:1.02s;"></div>
+              <div class="twbar" style="--min:5px;--max:22px;--spd:0.9s;--del:1.08s;"></div>
+              <div class="twbar" style="--min:3px;--max:14px;--spd:0.82s;--del:1.14s;"></div>
+            </div>
+          </div>
+          <div style="margin-top:.8rem;display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:.6rem;color:rgba(255,255,255,0.25);">
+            <span>Eleven v3 · 70+ Languages</span>
+            <span>✓ 75ms Latency</span>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;font-family:var(--font-mono);font-size:.6rem;color:var(--fog);letter-spacing:2px;">↑ Reference: ElevenLabs Speech Synthesis Interface (elevenlabs.io)</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ Q2 — PRIMARY USERS ═══════════════ -->
+<hr class="sec-divider"/>
+<section id="q2">
+  <div class="section-tag reveal">
+    <span class="tag-num">02</span>
+    <div class="tag-line"></div>
+    <span class="tag-label">Primary Users</span>
+  </div>
+
+  <h2 class="sec-heading reveal">
+    Who Is It <em>Really For?</em>
+  </h2>
+
+  <p class="reveal" style="max-width:680px;font-size:.95rem;line-height:1.85;color:var(--muted);margin-bottom:1rem;">
+    ElevenLabs serves four distinct user segments — each with different use cases, willingness-to-pay, and strategic value. Understanding who to <em>prioritize</em> is the real PM challenge.
+  </p>
+
+  <div class="user-cards">
+    <div class="user-card reveal d1 tilt" style="--uc-grad:linear-gradient(135deg,rgba(91,33,182,0.06),rgba(139,92,246,0.04));">
+      <div class="uc-rank">01</div>
+      <span class="uc-emoji">🏢</span>
+      <div class="uc-title">Enterprise & Media Companies</div>
+      <div class="uc-desc">Washington Post, TIME, HarperCollins, Deutsche Telekom, Square, Revolut, and 41% of Fortune 500 companies. Use ElevenLabs for customer support agents, content localization, internal training, and conversational commerce. Enterprise revenue growing 200%+ YoY.</div>
+      <div class="uc-tags">
+        <span class="uc-tag ut-v">Highest LTV</span>
+        <span class="uc-tag ut-v">Custom Contracts</span>
+        <span class="uc-tag ut-v">API-at-Scale</span>
+        <span class="uc-tag ut-g">50K+ calls/month</span>
+      </div>
+    </div>
+
+    <div class="user-card reveal d2 tilt" style="--uc-grad:linear-gradient(135deg,rgba(6,95,70,0.06),rgba(4,120,87,0.04));">
+      <div class="uc-rank">02</div>
+      <span class="uc-emoji">⚙️</span>
+      <div class="uc-title">Developers & API Builders</div>
+      <div class="uc-desc">Indie hackers, SaaS builders, and dev teams who integrate ElevenLabs into their own products. Build voice bots, accessibility tools, game engines, and content pipelines. They are the "multiplier layer" — each dev who ships a product creates downstream end-users by the thousands.</div>
+      <div class="uc-tags">
+        <span class="uc-tag ut-g">API-First</span>
+        <span class="uc-tag ut-g">Low Latency</span>
+        <span class="uc-tag ut-g">SDK / React</span>
+        <span class="uc-tag ut-v">Platform Lock-in</span>
+      </div>
+    </div>
+
+    <div class="user-card reveal d3 tilt" style="--uc-grad:linear-gradient(135deg,rgba(146,64,14,0.05),rgba(180,83,9,0.03));">
+      <div class="uc-rank">03</div>
+      <span class="uc-emoji">🎙️</span>
+      <div class="uc-title">Content Creators</div>
+      <div class="uc-desc">YouTubers, podcasters, audiobook narrators, and TikTok creators who use ElevenLabs to produce content at scale without recording studios. Power users like Magnus Carlsen, Hikaru Nakamura, and celebrity voices on Chess.com. Key evangelists who drove initial viral growth.</div>
+      <div class="uc-tags">
+        <span class="uc-tag ut-a">Viral Growth Engine</span>
+        <span class="uc-tag ut-a">Free-to-Pro Converts</span>
+        <span class="uc-tag ut-a">Brand Advocates</span>
+      </div>
+    </div>
+
+    <div class="user-card reveal d4 tilt" style="--uc-grad:linear-gradient(135deg,rgba(159,18,57,0.05),rgba(190,18,60,0.03));">
+      <div class="uc-rank">04</div>
+      <span class="uc-emoji">🤖</span>
+      <div class="uc-title">AI Agent Builders</div>
+      <div class="uc-desc">Companies building conversational AI products using ElevenAgents — ElevenLabs' fully managed agents platform. This includes customer support bots, sales agents, citizen service systems (like the Ukrainian Government), and in-app assistants. This is ElevenLabs' fastest-growing segment for 2026.</div>
+      <div class="uc-tags">
+        <span class="uc-tag ut-r">Fastest Growing</span>
+        <span class="uc-tag ut-r">ElevenAgents Platform</span>
+        <span class="uc-tag ut-v">Real-time Voice</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Priority Ranking -->
+  <div class="priority-bar reveal d3" style="margin-top:2.5rem;">
+    <div class="pb-title">Priority Ranking — Who Should ElevenLabs Prioritize?</div>
+
+    <div class="pb-row">
+      <div class="pb-label">🏢 Enterprise / Media</div>
+      <div class="pb-track"><div class="pb-fill" data-w="92" style="background:linear-gradient(90deg,var(--violet),var(--violet3));"></div></div>
+      <div class="pb-val">92%</div>
+    </div>
+    <div class="pb-row">
+      <div class="pb-label">🤖 AI Agent Builders</div>
+      <div class="pb-track"><div class="pb-fill" data-w="84" style="background:linear-gradient(90deg,var(--rose2),#f87171);"></div></div>
+      <div class="pb-val">84%</div>
+    </div>
+    <div class="pb-row">
+      <div class="pb-label">⚙️ Developers / API</div>
+      <div class="pb-track"><div class="pb-fill" data-w="76" style="background:linear-gradient(90deg,var(--emerald2),#34d399);"></div></div>
+      <div class="pb-val">76%</div>
+    </div>
+    <div class="pb-row" style="margin-bottom:0;">
+      <div class="pb-label">🎙️ Content Creators</div>
+      <div class="pb-track"><div class="pb-fill" data-w="58" style="background:linear-gradient(90deg,var(--gold2),#fbbf24);"></div></div>
+      <div class="pb-val">58%</div>
+    </div>
+
+    <p style="margin-top:1.2rem;font-size:.8rem;color:var(--muted);border-top:1px solid var(--rim);padding-top:1rem;line-height:1.7;">
+      <strong style="color:var(--text);">Why Enterprise + AI Agents first?</strong> Revenue is split 50-50 between enterprise and consumer today, expected to shift to 70-30 enterprise by 2027. Enterprise contracts carry 10x the LTV, create platform lock-in, generate usage data for model improvement, and drive word-of-mouth in C-suite networks. Creators are the <em>evangelism layer</em>, not the core customer.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════ Q3 — DIFFERENTIATORS ═══════════════ -->
+<hr class="sec-divider"/>
+<section id="q3">
+  <div class="section-tag reveal">
+    <span class="tag-num">03</span>
+    <div class="tag-line"></div>
+    <span class="tag-label">Key Differentiators</span>
+  </div>
+
+  <h2 class="sec-heading reveal">
+    What Makes It <em>Untouchable?</em>
+  </h2>
+
+  <div class="diff-grid">
+
+    <!-- Differentiator 1 -->
+    <div class="diff-card reveal d1 tilt">
+      <div class="diff-left">
+        <div class="diff-num">DIFFERENTIATOR 01</div>
+        <div class="diff-icon">⚡</div>
+        <div style="margin-bottom:.6rem;">
+          <span class="diff-badge db-star">⭐ BIGGEST DIFFERENTIATOR</span>
+        </div>
+        <div class="diff-title">Neural Voice Quality + Eleven v3</div>
+        <div class="diff-desc">ElevenLabs' proprietary neural TTS engine understands context — it doesn't stitch phonemes, it <em>thinks</em> about how a sentence should sound. The Eleven v3 model introduces audio tags ([laughs], [sighs], [whispers]), dialogue mode, emotional nuance control, and support for 70+ languages with ≤75ms latency. No competitor matches this combination of expressiveness + speed.</div>
+        <div class="diff-chips">
+          <span class="diff-chip">70+ Languages</span>
+          <span class="diff-chip">75ms Latency</span>
+          <span class="diff-chip">Audio Tags</span>
+          <span class="diff-chip">Dialogue Mode</span>
+          <span class="diff-chip">Emotional Range</span>
+        </div>
+      </div>
+      <div class="diff-right">
+        <div style="width:100%;">
+          <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:.8rem;">Model Spec — Eleven v3</div>
+          <div class="spec-box">
+            <div class="spec-row">
+              <span class="spec-key">Model ID</span>
+              <span class="spec-val violet">eleven_v3</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Languages</span>
+              <span class="spec-val green">70+</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Latency</span>
+              <span class="spec-val green">~75ms</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Audio Tags</span>
+              <span class="spec-val green">Advanced ✓</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Dialogue Mode</span>
+              <span class="spec-val green">Yes ✓</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Voice Library</span>
+              <span class="spec-val green">10,000+</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Flash Model</span>
+              <span class="spec-val violet">Flash v2.5</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Character Limit</span>
+              <span class="spec-val" style="color:rgba(255,255,255,0.6);">40K (Flash)</span>
+            </div>
+          </div>
+          <div style="margin-top:1rem;font-family:var(--font-mono);font-size:.62rem;color:var(--muted);text-align:center;">Reference: ElevenLabs API Documentation</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Differentiator 2 -->
+    <div class="diff-card reveal d2 tilt">
+      <div class="diff-left">
+        <div class="diff-num">DIFFERENTIATOR 02</div>
+        <div class="diff-icon">🎭</div>
+        <div class="diff-title">Professional Voice Cloning</div>
+        <div class="diff-desc">ElevenLabs offers two tiers of voice cloning: Instant Voice Cloning (from a 1-2 min audio sample, fast but lighter) and Professional Voice Cloning (~30 min of high-quality audio, production-grade with full emotional nuance). Once cloned, a voice generates unlimited content — enabling creators, publishers, and celebrities to license their voice at scale. Michael Caine and Matthew McConaughey are among notable celebrity voice partners.</div>
+        <div class="diff-chips">
+          <span class="diff-chip">Instant Clone</span>
+          <span class="diff-chip">Pro Clone</span>
+          <span class="diff-chip">Celebrity Voices</span>
+          <span class="diff-chip">Voice Marketplace</span>
+          <span class="diff-chip">10K+ Library</span>
+        </div>
+      </div>
+      <div class="diff-right">
+        <div style="width:100%;">
+          <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:.8rem;">Voice Cloning Flow</div>
+          <div style="background:linear-gradient(135deg,#0f0c29,#1a1040);border-radius:12px;padding:1.2rem;">
+            <div class="vc-steps">
+              <div class="vc-step">
+                <div class="vc-step-num">1</div>
+                <span>Upload 1–30 min audio sample</span>
+              </div>
+              <div class="vc-step">
+                <div class="vc-step-num">2</div>
+                <span>Neural model trains on voice characteristics</span>
+              </div>
+              <div class="vc-step">
+                <div class="vc-step-num">3</div>
+                <span>Clone verified + tone/emotion mapped</span>
+              </div>
+              <div class="vc-step">
+                <div class="vc-step-num">4</div>
+                <span style="color:#34d399;"><span class="vc-step-check">✓</span> Generate unlimited audio</span>
+              </div>
+            </div>
+            <div style="margin-top:1rem;padding:.7rem;background:rgba(139,92,246,0.12);border-radius:8px;border:1px solid rgba(139,92,246,0.25);">
+              <div style="font-family:var(--font-mono);font-size:.6rem;color:#a78bfa;letter-spacing:2px;margin-bottom:.3rem;">COMPARISON</div>
+              <div style="font-size:.75rem;color:rgba(255,255,255,0.7);line-height:1.6;">OpenAI: No public voice cloning<br/>Google TTS: No cloning capability<br/>ElevenLabs: Full clone ecosystem ✓</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Differentiator 3 -->
+    <div class="diff-card reveal d3 tilt">
+      <div class="diff-left">
+        <div class="diff-num">DIFFERENTIATOR 03</div>
+        <div class="diff-icon">🔌</div>
+        <div class="diff-title">Full Audio API Stack + ElevenAgents</div>
+        <div class="diff-desc">ElevenLabs has expanded from TTS into a full audio infrastructure stack: Text-to-Speech (Eleven v3), Speech-to-Text (Scribe v2 with speaker diarization), AI Dubbing (video dubbing at scale), Sound Effects, Studio-grade Music (licensed, commercial use), and the ElevenAgents platform for conversational AI agents. This breadth creates network effects — developers who use the TTS API naturally adopt the whole stack.</div>
+        <div class="diff-chips">
+          <span class="diff-chip">TTS + STT</span>
+          <span class="diff-chip">AI Dubbing</span>
+          <span class="diff-chip">Sound FX</span>
+          <span class="diff-chip">Music API</span>
+          <span class="diff-chip">ElevenAgents</span>
+          <span class="diff-chip">Native SDKs</span>
+        </div>
+      </div>
+      <div class="diff-right">
+        <div style="width:100%;">
+          <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:.8rem;">Competitor Comparison</div>
+          <table class="comp-table">
+            <tr>
+              <th>Feature</th>
+              <th>EL</th>
+              <th>OpenAI</th>
+              <th>Google</th>
+            </tr>
+            <tr>
+              <td>Neural TTS Quality</td>
+              <td class="el tick">✓✓</td>
+              <td class="tick">✓</td>
+              <td class="partial">~</td>
+            </tr>
+            <tr>
+              <td>Voice Cloning</td>
+              <td class="el tick">✓✓</td>
+              <td class="cross">✗</td>
+              <td class="cross">✗</td>
+            </tr>
+            <tr>
+              <td>70+ Languages</td>
+              <td class="el tick">✓</td>
+              <td class="tick">✓</td>
+              <td class="tick">✓</td>
+            </tr>
+            <tr>
+              <td>AI Dubbing</td>
+              <td class="el tick">✓</td>
+              <td class="cross">✗</td>
+              <td class="partial">~</td>
+            </tr>
+            <tr>
+              <td>Music Generation</td>
+              <td class="el tick">✓</td>
+              <td class="cross">✗</td>
+              <td class="partial">~</td>
+            </tr>
+            <tr>
+              <td>Conversational Agents</td>
+              <td class="el tick">✓</td>
+              <td class="tick">✓</td>
+              <td class="tick">✓</td>
+            </tr>
+            <tr>
+              <td>≤100ms Latency</td>
+              <td class="el tick">75ms ✓</td>
+              <td class="partial">~</td>
+              <td class="cross">✗</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ Q4 — METRICS ═══════════════ -->
+<hr class="sec-divider"/>
+<section id="q4">
+  <div class="section-tag reveal">
+    <span class="tag-num">04</span>
+    <div class="tag-line"></div>
+    <span class="tag-label">Success Metrics</span>
+  </div>
+
+  <h2 class="sec-heading reveal">
+    What I'd <em>Track as PM.</em>
+  </h2>
+
+  <!-- Live Stats from Research -->
+  <div class="metric-big reveal d1">
+    <div class="met-cell">
+      <span class="met-value" data-count="500">0</span>
+      <span class="met-label">ARR — April 2026</span>
+      <span class="met-trend">↑ From $120M (end 2024)</span>
+    </div>
+    <div class="met-cell">
+      <span class="met-value" data-count="330">0</span>
+      <span class="met-label">ARR — End 2025</span>
+      <span class="met-trend">↑ 200%+ enterprise growth</span>
+    </div>
+    <div class="met-cell">
+      <span class="met-value" data-count="41">0</span>
+      <span class="met-label">% Fortune 500 Using EL</span>
+      <span class="met-trend">↑ 10M+ monthly calls</span>
+    </div>
+    <div class="met-cell">
+      <span class="met-value" data-count="14">0</span>
+      <span class="met-label">M Songs Generated</span>
+      <span class="met-trend">↑ Since Aug 2025 launch</span>
+    </div>
+  </div>
+
+  <p class="reveal" style="font-size:.9rem;color:var(--muted);margin-bottom:2.5rem;line-height:1.7;">If I were PM at ElevenLabs today, here are the <strong style="color:var(--text);">3 metrics</strong> I'd track above all others — not vanity metrics, but leading indicators of sustainable platform health:</p>
+
+  <div class="metric-cards">
+    <div class="metric-card reveal d1" style="--mc-color:linear-gradient(90deg,var(--violet),var(--violet3));--mc-bor:var(--violet);">
+      <div class="mc-num">PM-01</div>
+      <div class="mc-title">Net Revenue Retention (NRR) by Cohort</div>
+      <div class="mc-desc">NRR measures how much revenue expands within existing accounts over time — the gold standard for B2B platform health. At >120% NRR, ElevenLabs would grow even with zero new customer acquisition. It captures upsell (more characters, more API products), cross-sell (TTS → agents → music), and churn reduction simultaneously.</div>
+      <div class="mc-target">
+        <strong>PM Target:</strong> NRR &gt; 125% for enterprise cohort<br/>
+        <strong>Why it matters:</strong> Proves platform lock-in, justifies valuation multiple, shows product stickiness across the audio stack.
+      </div>
+    </div>
+
+    <div class="metric-card reveal d2" style="--mc-color:linear-gradient(90deg,var(--gold2),#fbbf24);--mc-bor:var(--gold2);">
+      <div class="mc-num">PM-02</div>
+      <div class="mc-title">Monthly API Character Volume Growth</div>
+      <div class="mc-desc">Character volume is the core API health signal — every TTS generation is billed per character. Month-over-month growth in total characters generated across all tiers (free, creator, enterprise) tells you whether adoption is accelerating or plateauing. It's a leading indicator of revenue, 6-8 weeks ahead of billing cycles.</div>
+      <div class="mc-target">
+        <strong>PM Target:</strong> 15-20% MoM character volume growth<br/>
+        <strong>Why it matters:</strong> ElevenLabs added ~$10M+ new ARR/month in mid-2025. Character volume growth is the engine behind that acceleration.
+      </div>
+    </div>
+
+    <div class="metric-card reveal d3" style="--mc-color:linear-gradient(90deg,var(--emerald2),#34d399);--mc-bor:var(--emerald2);">
+      <div class="mc-num">PM-03</div>
+      <div class="mc-title">API → Enterprise Upgrade Rate</div>
+      <div class="mc-desc">What percentage of high-volume API users convert to enterprise contracts within 90 days? This metric captures monetization efficiency and signals whether the self-serve growth engine is feeding the enterprise sales funnel. A high rate means the PLG motion is working; a low rate means developers are building products but revenue isn't following.</div>
+      <div class="mc-target">
+        <strong>PM Target:</strong> &gt;12% of high-usage API accounts → enterprise in 90 days<br/>
+        <strong>Why it matters:</strong> Revenue split is 50-50 enterprise/consumer today, targeting 70-30. This metric drives that shift.
+      </div>
+    </div>
+  </div>
+
+  <!-- Growth Chart (SVG-based) -->
+  <div class="growth-chart-wrap reveal" id="growthChart">
+    <div class="gc-title">ARR Growth Trajectory — ElevenLabs (2023–2026)</div>
+    <div class="gc-svg-wrap">
+      <svg viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg" class="gc-svg" id="gcSvg" style="width:100%;height:auto;">
+        <defs>
+          <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#5b21b6"/>
+            <stop offset="100%" stop-color="#b45309"/>
+          </linearGradient>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.01"/>
+          </linearGradient>
+        </defs>
+        <!-- Grid lines -->
+        <line x1="60" y1="20" x2="60" y2="170" stroke="#e2e8f0" stroke-width="1"/>
+        <line x1="60" y1="170" x2="740" y2="170" stroke="#e2e8f0" stroke-width="1"/>
+        <line x1="60" y1="20" x2="740" y2="20" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="4,4"/>
+        <line x1="60" y1="70" x2="740" y2="70" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="4,4"/>
+        <line x1="60" y1="120" x2="740" y2="120" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="4,4"/>
+        <!-- Y labels -->
+        <text x="52" y="24" text-anchor="end" font-family="DM Mono,monospace" font-size="9" fill="#94a3b8">$500M</text>
+        <text x="52" y="74" text-anchor="end" font-family="DM Mono,monospace" font-size="9" fill="#94a3b8">$250M</text>
+        <text x="52" y="124" text-anchor="end" font-family="DM Mono,monospace" font-size="9" fill="#94a3b8">$100M</text>
+        <text x="52" y="174" text-anchor="end" font-family="DM Mono,monospace" font-size="9" fill="#94a3b8">$0</text>
+        <!-- X labels -->
+        <text x="120" y="186" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#94a3b8">Jan '23</text>
+        <text x="230" y="186" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#94a3b8">Jan '24</text>
+        <text x="380" y="186" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#94a3b8">Jan '25</text>
+        <text x="540" y="186" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#94a3b8">Jan '26</text>
+        <text x="680" y="186" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#94a3b8">Apr '26</text>
+        <!-- Area -->
+        <path d="M120,168 C160,166 200,163 230,160 C270,156 310,148 380,130 C430,116 480,100 540,68 C590,42 630,30 680,20 L680,170 L120,170 Z" fill="url(#areaGrad)"/>
+        <!-- Line -->
+        <path d="M120,168 C160,166 200,163 230,160 C270,156 310,148 380,130 C430,116 480,100 540,68 C590,42 630,30 680,20" stroke="url(#lineGrad)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <!-- Data points -->
+        <circle cx="120" cy="168" r="4" fill="#5b21b6"/>
+        <circle cx="230" cy="160" r="4" fill="#5b21b6"/>
+        <circle cx="380" cy="130" r="4" fill="#6d28d9"/>
+        <circle cx="540" cy="68" r="5" fill="#7c3aed"/>
+        <circle cx="680" cy="20" r="6" fill="#b45309"/>
+        <!-- Labels -->
+        <text x="120" y="158" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#5b21b6">$5M</text>
+        <text x="230" y="150" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#5b21b6">$25M</text>
+        <text x="380" y="122" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#6d28d9">$120M</text>
+        <text x="540" y="60" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#7c3aed">$330M</text>
+        <text x="680" y="12" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#b45309">$500M</text>
+      </svg>
+    </div>
+    <div style="font-family:var(--font-mono);font-size:.58rem;color:var(--fog);text-align:right;margin-top:.5rem;letter-spacing:1px;">Source: Sacra Research · ElevenLabs Blog · TechCrunch · GetLatka</div>
+  </div>
+</section>
+
+<!-- ═══════════════ Q5 — RISKS ═══════════════ -->
+<hr class="sec-divider"/>
+<section id="q5">
+  <div class="section-tag reveal">
+    <span class="tag-num">05</span>
+    <div class="tag-line"></div>
+    <span class="tag-label">Risks & Limitations</span>
+  </div>
+
+  <h2 class="sec-heading reveal">
+    What Could <em>Break It?</em>
+  </h2>
+
+  <p class="reveal" style="max-width:680px;font-size:.95rem;line-height:1.85;color:var(--muted);margin-bottom:1rem;">
+    ElevenLabs is on an extraordinary growth trajectory. But the same power that makes voice cloning revolutionary also makes it dangerous. Here are the 4 biggest threats to the platform.
+  </p>
+
+  <div class="risk-grid">
+
+    <div class="risk-card reveal d1" style="--rc-color:var(--rose2);">
+      <div class="risk-severity rs-critical">🔴 CRITICAL RISK</div>
+      <div class="risk-title">Deepfake & Ethical Misuse</div>
+      <div class="risk-desc">Voice cloning has already been weaponized. In 2023, 4chan users used ElevenLabs to generate deepfake audio of celebrities (Emma Watson, Joe Rogan) saying offensive things. A fabricated Biden robocall in the 2024 New Hampshire primary used AI voice — later linked to ElevenLabs-style tooling. A single high-profile political deepfake incident could trigger Congressional hearings and platform bans.</div>
+      <div class="risk-mitig">ElevenLabs has deployed AI Speech Classifier (detects EL-generated audio), blocks celebrity voice cloning, and joined C2PA for content provenance. But enforcement at scale remains unsolved.</div>
+    </div>
+
+    <div class="risk-card reveal d2" style="--rc-color:var(--gold2);">
+      <div class="risk-severity rs-high">🟠 HIGH RISK</div>
+      <div class="risk-title">Big Tech Commoditization</div>
+      <div class="risk-desc">Google, OpenAI, Microsoft (Azure), and Amazon all have TTS capabilities. The risk is that they bundle TTS "for free" inside larger product suites (Gemini, ChatGPT, Copilot), making standalone TTS subscriptions redundant for casual users. OpenAI's Voice Mode in GPT-4o already does real-time voice conversation — at no extra charge.</div>
+      <div class="risk-mitig">ElevenLabs' moat is quality + voice cloning + full audio stack. Big Tech can replicate TTS quality, but the 10K+ voice library, professional cloning, and ElevenAgents specialization are harder to match quickly.</div>
+    </div>
+
+    <div class="risk-card reveal d3" style="--rc-color:var(--violet2);">
+      <div class="risk-severity rs-high">🟠 HIGH RISK</div>
+      <div class="risk-title">Regulatory Pressure</div>
+      <div class="risk-desc">The EU AI Act classifies AI-generated voice as regulated AI output requiring disclosure. The US DEEPFAKES Accountability Act and multiple state-level bills directly target voice cloning. The UK, Australia, and India are drafting similar legislation. Any regulation requiring "proof of consent" before voice cloning could gut the instant voice cloning product — ElevenLabs' most viral feature.</div>
+      <div class="risk-mitig">ElevenLabs is proactively partnering with regulators and implementing consent verification. But regulatory timelines are unpredictable — a sudden rule could force product pivots in key markets.</div>
+    </div>
+
+    <div class="risk-card reveal d4" style="--rc-color:var(--emerald2);">
+      <div class="risk-severity rs-medium">🟡 MEDIUM RISK</div>
+      <div class="risk-title">Feature Fragmentation</div>
+      <div class="risk-desc">ElevenLabs has expanded aggressively: TTS, STT, dubbing, music, sound effects, agents, and hints at video/image generation. A Medium post by a power user noted: "They are trying to be Midjourney, Google, and Grok simultaneously — sacrificing their core product." If voice quality erodes while they chase new verticals, competitors will close the quality gap fast.</div>
+      <div class="risk-mitig">The $500M Series D signals investors believe the platform bet is correct. But execution discipline — maintaining Eleven v3 quality improvements while building ElevenAgents — will be the real test in 2026-27.</div>
+    </div>
+  </div>
+
+  <!-- Biggest Risk Callout -->
+  <div class="biggest-risk reveal">
+    <div class="br-label">⚠ Biggest Risk Verdict</div>
+    <p class="br-text">The <strong>deepfake/ethics risk combined with regulatory pressure</strong> is the single biggest existential threat. ElevenLabs' technology is genuinely dual-use — the same voice cloning that lets a novelist narrate their own audiobook can impersonate a politician before an election. Unlike competition risk (which unfolds slowly), a single catastrophic misuse event could trigger platform bans, government regulation, or reputational collapse <em>overnight</em>. Technical excellence won't save them if the social and political trust breaks. This is why ElevenLabs' safety roadmap — content provenance, speech classifiers, C2PA participation — matters as much as its model roadmap.</p>
+  </div>
+</section>
+
+<!-- ═══════════════ ANALYST ═══════════════ -->
+<hr class="sec-divider"/>
+<section id="analyst">
+  <div class="analyst-big">YASH RAJ</div>
+
+  <div class="section-tag reveal" style="position:relative;z-index:2;">
+    <span class="tag-num">06</span>
+    <div class="tag-line"></div>
+    <span class="tag-label">About the Analyst</span>
+  </div>
+
+  <div class="analyst-grid">
+    <div class="reveal-left">
+      <div class="analyst-card">
+        <div class="analyst-avatar">YR</div>
+        <div class="analyst-name">Yash Raj</div>
+        <div class="analyst-title">Security Researcher · Developer · ML Builder · Bihar, India</div>
+        <div class="open-badge">
+          <div class="open-dot"></div>
+          Open to Internships
+        </div>
+        <div class="analyst-bio">
+          16-year-old developer and cybersecurity enthusiast from Bihar, currently in Class 12 (PCM + CS). Built <strong>Aadhaar Pulse</strong> — a full AI/ML predictive framework on 5M+ UIDAI records — which was selected as a finalist at the UIDAI National Data Hackathon 2026 (Team ID: UIDAI_2021). Disqualified only due to an 18+ age rule, not the work itself.
+        </div>
+        <div class="analyst-bio" style="margin-top:.5rem;">
+          Google-certified in Cybersecurity. Independently discovered a real production security vulnerability and disclosed it responsibly. Documented live phishing attacks and silent data-harvesting by consumer apps.
+        </div>
+
+        <div class="contact-links">
+          <a href="mailto:akhisweety01@gmail.com" class="c-link">
+            <div class="c-link-icon">✉️</div>
+            <div class="c-link-info">
+              <div class="c-link-key">Email</div>
+              <div class="c-link-val">akhisweety01@gmail.com</div>
+            </div>
+            <div class="c-link-arrow">→</div>
+          </a>
+          <a href="https://wa.me/919060170251" target="_blank" class="c-link">
+            <div class="c-link-icon">💬</div>
+            <div class="c-link-info">
+              <div class="c-link-key">WhatsApp</div>
+              <div class="c-link-val">+91 90601 70251</div>
+            </div>
+            <div class="c-link-arrow">→</div>
+          </a>
+          <a href="https://t.me/UNSEEN_SINISTER" target="_blank" class="c-link">
+            <div class="c-link-icon">📨</div>
+            <div class="c-link-info">
+              <div class="c-link-key">Telegram</div>
+              <div class="c-link-val">@UNSEEN_SINISTER</div>
+            </div>
+            <div class="c-link-arrow">→</div>
+          </a>
+          <div class="c-link" style="cursor:default;">
+            <div class="c-link-icon">📍</div>
+            <div class="c-link-info">
+              <div class="c-link-key">Location</div>
+              <div class="c-link-val">Badki Delha, Bihar — 823002</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reveal-right">
+      <h2 class="sec-heading" style="font-size:clamp(1.8rem,3.5vw,3rem);">Built for <em>Real Impact.</em></h2>
+      <p style="font-size:.92rem;color:var(--muted);line-height:1.85;margin-bottom:2rem;">Open to internships, research collaborations, product roles, and security audits. 16 years old and already shipping things that matter — from government hackathon finalists to live security demonstrations.</p>
+
+      <div class="skills-cluster">
+        <div class="sk-cell">
+          <div class="sk-cell-val" data-count="89">0</div>
+          <div class="sk-cell-lbl">Class X Board %</div>
+        </div>
+        <div class="sk-cell">
+          <div class="sk-cell-val" data-count="5">0</div>
+          <div class="sk-cell-lbl">M+ Records (ML)</div>
+        </div>
+        <div class="sk-cell">
+          <div class="sk-cell-val" data-count="3">0</div>
+          <div class="sk-cell-lbl">Live Projects</div>
+        </div>
+        <div class="sk-cell">
+          <div class="sk-cell-val" data-count="1">0</div>
+          <div class="sk-cell-lbl">Real Bug Disclosed</div>
+        </div>
+      </div>
+
+      <div style="margin-top:2rem;display:flex;flex-wrap:wrap;gap:.6rem;">
+        <span style="font-family:var(--font-mono);font-size:.65rem;padding:.35rem .9rem;border-radius:20px;background:var(--vlight);color:var(--violet2);border:1px solid rgba(91,33,182,0.2);">Cybersecurity</span>
+        <span style="font-family:var(--font-mono);font-size:.65rem;padding:.35rem .9rem;border-radius:20px;background:var(--glight);color:var(--gold2);border:1px solid rgba(180,83,9,0.2);">Python / ML</span>
+        <span style="font-family:var(--font-mono);font-size:.65rem;padding:.35rem .9rem;border-radius:20px;background:var(--elight);color:var(--emerald2);border:1px solid rgba(4,120,87,0.2);">Web Development</span>
+        <span style="font-family:var(--font-mono);font-size:.65rem;padding:.35rem .9rem;border-radius:20px;background:var(--rlight);color:var(--rose2);border:1px solid rgba(159,18,57,0.2);">Ethical Hacking</span>
+        <span style="font-family:var(--font-mono);font-size:.65rem;padding:.35rem .9rem;border-radius:20px;background:var(--vlight);color:var(--violet2);border:1px solid rgba(91,33,182,0.2);">Linux</span>
+        <span style="font-family:var(--font-mono);font-size:.65rem;padding:.35rem .9rem;border-radius:20px;background:var(--glight);color:var(--gold2);border:1px solid rgba(180,83,9,0.2);">UI / UX Design</span>
+        <span style="font-family:var(--font-mono);font-size:.65rem;padding:.35rem .9rem;border-radius:20px;background:var(--elight);color:var(--emerald2);border:1px solid rgba(4,120,87,0.2);">UIDAI Hackathon Finalist</span>
+        <span style="font-family:var(--font-mono);font-size:.65rem;padding:.35rem .9rem;border-radius:20px;background:var(--vlight);color:var(--violet2);border:1px solid rgba(91,33,182,0.2);">Google Certified</span>
+      </div>
+
+      <div style="margin-top:2rem;display:flex;gap:1rem;flex-wrap:wrap;">
+        <div class="mag-wrap">
+          <a href="mailto:akhisweety01@gmail.com" class="btn-mag primary"><span>Hire / Collaborate</span><span>→</span></a>
+        </div>
+        <div class="mag-wrap">
+          <a href="https://wa.me/919060170251" class="btn-mag outline" target="_blank">WhatsApp Me</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">YR<span>.</span>Teardowns</div>
+  <div class="footer-links">
+    <a href="mailto:akhisweety01@gmail.com">Email</a>
+    <a href="https://wa.me/919060170251">WhatsApp</a>
+    <a href="https://t.me/UNSEEN_SINISTER">Telegram</a>
+  </div>
+  <div class="footer-copy">© 2026 · Yash Raj · Bihar · ElevenLabs Product Teardown</div>
+</footer>
+
+<script>
+/* ══ LOADER ══════════════════════════════ */
+(function(){
+  const bar=document.getElementById('loader-bar');
+  const pct=document.getElementById('loader-pct');
+  const loader=document.getElementById('loader');
+  let p=0;
+  const iv=setInterval(()=>{
+    p=Math.min(p+Math.random()*15,100);
+    bar.style.width=p+'%';
+    pct.textContent=Math.floor(p)+'%';
+    if(p>=100){
+      clearInterval(iv);
+      setTimeout(()=>{
+        loader.classList.add('hidden');
+        document.body.style.overflow='';
+        startAll();
+      },500);
+    }
+  },80);
+  document.body.style.overflow='hidden';
+})();
+
+/* ══ CURSOR ══════════════════════════════ */
+const dot=document.getElementById('cdot');
+const ring=document.getElementById('cring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;
+  dot.style.left=mx+'px';dot.style.top=my+'px';
+});
+(function animRing(){
+  rx+=(mx-rx)*.1;ry+=(my-ry)*.1;
+  ring.style.left=rx+'px';ring.style.top=ry+'px';
+  requestAnimationFrame(animRing);
+})();
+document.querySelectorAll('a,button,.tilt,.user-card,.risk-card,.metric-card,.diff-card,.layer-pill,.c-link,.btn-mag,.analyst-card').forEach(el=>{
+  el.addEventListener('mouseenter',()=>document.body.classList.add('hover-link'));
+  el.addEventListener('mouseleave',()=>document.body.classList.remove('hover-link'));
+});
+
+/* ══ PARTICLES CANVAS (light theme) ════ */
+function initCanvas(){
+  const canvas=document.getElementById('hero-canvas');
+  const ctx=canvas.getContext('2d');
+  let W,H,particles;
+  function resize(){
+    W=canvas.width=canvas.offsetWidth;
+    H=canvas.height=canvas.offsetHeight;
+    initP();
+  }
+  function initP(){
+    particles=Array.from({length:70},()=>({
+      x:Math.random()*W,y:Math.random()*H,
+      r:Math.random()*1.2+0.3,
+      vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35,
+      a:Math.random(),
+    }));
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    particles.forEach((p,i)=>{
+      particles.slice(i+1).forEach(q=>{
+        const dx=p.x-q.x,dy=p.y-q.y,d=Math.sqrt(dx*dx+dy*dy);
+        if(d<110){
+          ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);
+          ctx.strokeStyle=`rgba(91,33,182,${(1-d/110)*.1})`;
+          ctx.lineWidth=.4;ctx.stroke();
+        }
+      });
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(91,33,182,${p.a*.45})`;
+      ctx.fill();
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0||p.x>W)p.vx*=-1;
+      if(p.y<0||p.y>H)p.vy*=-1;
+      p.a=.2+Math.sin(Date.now()*.001+i)*.2;
+    });
+    requestAnimationFrame(draw);
+  }
+  resize();
+  window.addEventListener('resize',resize);
+  draw();
+}
+initCanvas();
+
+/* ══ NAV & PROGRESS ══════════════════════ */
+window.addEventListener('scroll',()=>{
+  const nav=document.getElementById('nav');
+  nav.classList.toggle('scrolled',window.scrollY>80);
+  const docH=document.documentElement.scrollHeight-window.innerHeight;
+  document.getElementById('progress-bar').style.width=(window.scrollY/docH*100)+'%';
+  const secs=['q1','q2','q3','q4','q5','analyst'];
+  let cur='';
+  secs.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&window.scrollY>=el.offsetTop-200)cur=id;
+  });
+  document.querySelectorAll('.nav-links a').forEach(a=>{
+    a.style.color=a.getAttribute('href')==='#'+cur?'var(--text)':'';
+  });
+},{passive:true});
+
+/* ══ SCROLL REVEAL ════════════════════════ */
+function initReveal(){
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);}
+    });
+  },{threshold:.1,rootMargin:'0px 0px -50px 0px'});
+  document.querySelectorAll('.reveal,.reveal-left,.reveal-right').forEach(el=>obs.observe(el));
+}
+
+/* ══ COUNTERS ════════════════════════════ */
+function animCount(el,target){
+  const dur=1800;const start=performance.now();
+  function step(now){
+    const t=Math.min((now-start)/dur,1);
+    const ease=1-Math.pow(1-t,4);
+    el.textContent=Math.floor(ease*target);
+    if(t<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+function initCounters(){
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const t=parseInt(e.target.dataset.count||e.target.dataset.target);
+        if(!isNaN(t))animCount(e.target,t);
+        obs.unobserve(e.target);
+      }
+    });
+  },{threshold:.5});
+  document.querySelectorAll('[data-count],[data-target]').forEach(el=>obs.observe(el));
+}
+
+/* ══ PRIORITY BARS ═══════════════════════ */
+function initPriorityBars(){
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        e.target.querySelectorAll('.pb-fill').forEach(b=>{
+          b.style.width=b.dataset.w+'%';
+        });
+        obs.unobserve(e.target);
+      }
+    });
+  },{threshold:.3});
+  document.querySelectorAll('.priority-bar').forEach(el=>obs.observe(el));
+}
+
+/* ══ TILT ═════════════════════════════════ */
+function initTilts(){
+  document.querySelectorAll('.tilt').forEach(card=>{
+    card.addEventListener('mousemove',e=>{
+      const rect=card.getBoundingClientRect();
+      const dx=(e.clientX-rect.left-rect.width/2)/(rect.width/2);
+      const dy=(e.clientY-rect.top-rect.height/2)/(rect.height/2);
+      card.style.transform=`perspective(1000px) rotateY(${dx*7}deg) rotateX(${-dy*5}deg) scale(1.02)`;
+    });
+    card.addEventListener('mouseleave',()=>{card.style.transform='perspective(1000px) rotateY(0) rotateX(0) scale(1)';});
+  });
+}
+
+/* ══ MAGNETIC BUTTONS ════════════════════ */
+function initMagnetics(){
+  document.querySelectorAll('.mag-wrap').forEach(wrap=>{
+    const btn=wrap.querySelector('.btn-mag');
+    if(!btn)return;
+    wrap.addEventListener('mousemove',e=>{
+      const rect=wrap.getBoundingClientRect();
+      const dx=(e.clientX-rect.left-rect.width/2)*.25;
+      const dy=(e.clientY-rect.top-rect.height/2)*.25;
+      btn.style.transform=`translate(${dx}px,${dy}px)`;
+    });
+    wrap.addEventListener('mouseleave',()=>{btn.style.transform='';});
+  });
+}
+
+/* ══ SMOOTH SCROLL ═══════════════════════ */
+function initSmoothScroll(){
+  document.querySelectorAll('a[href^="#"]').forEach(a=>{
+    a.addEventListener('click',e=>{
+      const id=a.getAttribute('href').slice(1);
+      const el=document.getElementById(id);
+      if(el){e.preventDefault();el.scrollIntoView({behavior:'smooth',block:'start'});}
+    });
+  });
+}
+
+/* ══ PARALLAX ORBS ═══════════════════════ */
+function initParallax(){
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY;
+    const o1=document.querySelector('.orb1'),o2=document.querySelector('.orb2');
+    if(o1)o1.style.transform=`translateY(${y*.18}px)`;
+    if(o2)o2.style.transform=`translateY(${-y*.13}px)`;
+  },{passive:true});
+}
+
+/* ══ GROWTH CHART ANIMATE ════════════════ */
+function initGrowthChart(){
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        document.getElementById('gcSvg').classList.add('animated');
+        obs.unobserve(e.target);
+      }
+    });
+  },{threshold:.4});
+  const chart=document.getElementById('growthChart');
+  if(chart)obs.observe(chart);
+}
+
+/* ══ HERO COUNTER (fast) ════════════════ */
+function initHeroCounters(){
+  setTimeout(()=>{
+    document.querySelectorAll('[data-target]').forEach(el=>{
+      const t=parseInt(el.dataset.target);let c=0;
+      const inc=t/60;
+      const timer=setInterval(()=>{
+        c=Math.min(c+inc,t);el.textContent=Math.floor(c);
+        if(c>=t)clearInterval(timer);
+      },28);
+    });
+  },400);
+}
+
+/* ══ NAV SCRAMBLE ════════════════════════ */
+function initScramble(){
+  const logo=document.querySelector('.nav-logo');
+  if(!logo)return;
+  const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%';
+  logo.addEventListener('mouseenter',()=>{
+    const final='EL.Teardown';let i=0;
+    const iv=setInterval(()=>{
+      logo.textContent=final.split('').map((c,j)=>j<i?final[j]:c===' '?' ':chars[Math.floor(Math.random()*chars.length)]).join('');
+      const span=document.createElement('span');span.style.color='var(--violet2)';
+      if(i>=final.length){clearInterval(iv);logo.innerHTML='EL<span style="color:var(--violet2)">.</span>Teardown';}
+      i+=1/3;
+    },30);
+  });
+}
+
+/* ══ FLOATING PARALLAX MOUSE ════════════ */
+let mouseX=0,mouseY=0;
+document.addEventListener('mousemove',e=>{
+  mouseX=(e.clientX/window.innerWidth-.5)*20;
+  mouseY=(e.clientY/window.innerHeight-.5)*20;
+  const orb1=document.querySelector('.orb1');
+  const orb2=document.querySelector('.orb2');
+  if(orb1)orb1.style.transform=`translate(${mouseX*.4}px,${mouseY*.4}px)`;
+  if(orb2)orb2.style.transform=`translate(${-mouseX*.3}px,${-mouseY*.3}px)`;
+},{passive:true});
+
+/* ══ INIT ALL ════════════════════════════ */
+function startAll(){
+  initReveal();
+  initCounters();
+  initPriorityBars();
+  initTilts();
+  initMagnetics();
+  initSmoothScroll();
+  initParallax();
+  initGrowthChart();
+  initHeroCounters();
+  initScramble();
+}
+</script>
+</body>
+</html>
